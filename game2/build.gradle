@@ -1,0 +1,42 @@
+apply plugin: "java"
+
+sourceCompatibility = 1.6
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+sourceSets.main.java.srcDirs = [ "src/" ]
+
+
+eclipse.project {
+    name = appName + "-game2"
+}
+
+//添加类型为Exec的任务，并依赖java插件提供的classes任务
+task packDex(dependsOn: classes, type: Exec) {
+    //获取sdk的目录
+    def sdkDir
+    def btVersion = "23.0.1"//build-tools版本号，需要换成你自己的
+    def localFile = file("../local.properties")
+    if (localFile.exists()) {
+        Properties localProp = new Properties()
+        localFile.withInputStream { instr ->
+            localProp.load(instr)
+        }
+        sdkDir = localProp.getProperty('sdk.dir')
+        if (!sdkDir) {
+            sdkDir = "$System.env.ANDROID_HOME"
+        }
+    }
+    //dx工具路径，win下需改为dx.bat
+    def dx = sdkDir + "/build-tools/$btVersion/dx.bat"
+    //要打包的class文件目录，classes任务默认会将java文件编译到这个目录
+    def input = file("build/classes/main")
+    //输出的dex文件目录
+    def output = file("build/dex");
+    //用于检测文件是否变动
+    inputs.files input
+    outputs.dir output
+    //创建目录
+    file(output).mkdirs();
+    //执行命令行
+    commandLine "$dx", '--dex', "--output=$output/game2.dex", input
+}
